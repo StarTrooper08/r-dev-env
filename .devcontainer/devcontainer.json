@@ -2,10 +2,11 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/cpp
 {
 	"name": "R-Dev-Env",
-	"image": "ghcr.io/startrooper08/r-dev-artifact:main",
+	"image": "ghcr.io/r-devel/r-dev-artifact:main",
 	//"build": {
 	//	"dockerfile": "Dockerfile"
         // },
+	"postCreateCommand": "source scripts/sourcebuild.sh",
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -19,9 +20,6 @@
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "gcc -v",
 
 	// Configure tool-specific properties.
 	// "customizations": {},
