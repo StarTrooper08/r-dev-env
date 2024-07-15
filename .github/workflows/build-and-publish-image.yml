@@ -55,13 +55,14 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{ env.VERSION }}
             type=sha
-
+            
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          tags: |
+            ${{ env.REGISTRY }}/startrooper08/r-dev-env:${{ github.ref_name }}
           build-args: |
             CONTAINER_VERSION=${{ env.VERSION }}
           labels: ${{ steps.meta.outputs.labels }}
