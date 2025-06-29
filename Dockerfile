@@ -33,7 +33,7 @@ FROM mcr.microsoft.com/devcontainers/cpp:dev-ubuntu-22.04 AS final
 ARG CONTAINER_VERSION
 ENV CONTAINER_VERSION=${CONTAINER_VERSION}
 
-# Install runtime dependencies for R
+# dependencies for R
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2 \
     libcurl4-openssl-dev \
