@@ -1,46 +1,31 @@
 # First Stage: Builder
-FROM mcr.microsoft.com/devcontainers/cpp:dev-ubuntu-22.04 AS builder
+FROM mcr.microsoft.com/devcontainers/cpp:dev-ubuntu AS builder
 
-ARG REINSTALL_CMAKE_VERSION_FROM_SOURCE="none"
-
-# Optionally install CMake for vcpkg
-COPY ./reinstall-cmake.sh /tmp/
-
-RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
-    chmod +x /tmp/reinstall-cmake.sh && /tmp/reinstall-cmake.sh ${REINSTALL_CMAKE_VERSION_FROM_SOURCE}; \
-    fi \
-    && rm -f /tmp/reinstall-cmake.sh
-
-# Enable deb-src for dependencies
-RUN sed -i.bak "/^#.*deb-src.*universe$/s/^# //g" /etc/apt/sources.list && apt update
-
-# Install necessary build dependencies
-RUN apt install -y --no-install-recommends \
+# Enable deb-src and install system dependencies
+RUN sed -i.bak "/^#.*deb-src.*universe$/s/^# //g" /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
       software-properties-common \
       subversion \
-      wget \
-      gpg \
-      build-essential \
-      gfortran \
-      libxml2-dev \
-      libcurl4-openssl-dev \
-      libssl-dev \
-      libblas-dev \
-      liblapack-dev
-
-# Add R repository and install R
-RUN add-apt-repository --enable-source --yes "ppa:marutter/rrutter4.0" \
+      libmagick++-dev \
+    && add-apt-repository --enable-source --yes "ppa:marutter/rrutter4.0" \
     && wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc \
-    && apt update \
-    && apt -y build-dep r-base-dev \
-    && apt -y install r-base-dev 
+    && apt-get update \
+    && apt-get build-dep -y r-base-dev \
+    && apt-get install -y r-base-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install R packages
-RUN Rscript -e "install.packages('languageserver', repos='https://cran.rstudio.com')" \
-    && Rscript -e "install.packages('httpgd', repos='https://cran.rstudio.com')"
-
-# Install shellcheck and ccache
-RUN apt install -y shellcheck ccache
+# Install R packages from r-universe
+RUN Rscript -e "runiverse <- sprintf('r-universe.dev/bin/linux/%s-%s/%s/', \
+                                 system2('lsb_release', '-sc', stdout = TRUE), \
+                                 R.version\$arch, \
+                                 substr(getRversion(), 1, 3)); \
+                print('Installing packages...'); \
+                install.packages(c('languageserver', 'httpgd'), \
+                 repos = c(runiverse = paste0('https://cran.', runiverse), \
+                           nx10 = paste0('https://nx10.', runiverse))); \
+                print('Packages installed.')"
 
 # Second Stage: Final Image
 FROM mcr.microsoft.com/devcontainers/cpp:dev-ubuntu-22.04 AS final
@@ -48,28 +33,28 @@ FROM mcr.microsoft.com/devcontainers/cpp:dev-ubuntu-22.04 AS final
 ARG CONTAINER_VERSION
 ENV CONTAINER_VERSION=${CONTAINER_VERSION}
 
-# Install minimal runtime dependencies
-RUN apt update && apt install -y --no-install-recommends \
+# Install runtime dependencies for R
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2 \
     libcurl4-openssl-dev \
     libssl-dev \
     libblas-dev \
     liblapack-dev \
-    gfortran
+    gfortran \
+    libmagick++-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy R installation from builder stage
+# Copy R installation and libraries from builder stage
 COPY --from=builder /usr/lib/R /usr/lib/R
-COPY --from=builder /usr/bin/R /usr/bin/R
 COPY --from=builder /usr/local/lib/R /usr/local/lib/R
+COPY --from=builder /usr/bin/R /usr/bin/R
 COPY --from=builder /usr/share/R /usr/share/R
 COPY --from=builder /etc/R /etc/R
-
-# Copy shared libraries
 COPY --from=builder /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 
-# Set environment variables
+# Environment variables for R
 ENV PATH="/usr/lib/R/bin:$PATH"
 ENV LD_LIBRARY_PATH="/usr/lib/R/lib:/usr/lib/x86_64-linux-gnu"
 
-# Verify installation
+# Verify R installation
 RUN ldconfig && R --version
