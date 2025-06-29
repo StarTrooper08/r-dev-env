@@ -19,7 +19,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository.lowercase() }}
+  IMAGE_NAME: startrooper08/r-dev-env
 
 jobs:
   build-and-push-image:
