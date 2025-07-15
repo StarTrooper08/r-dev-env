@@ -12,8 +12,6 @@
                 "editor.detectIndentation": false,
                 "r.lsp.diagnostics": false,
                 "r.plot.useHttpgd": true,
-                "r.rpath.linux": "/usr/bin/R",
-                "r.rterm.linux": "/usr/bin/R",
                 "terminal.integrated.sendKeybindingsToShell": true,
                 "svn.multipleFolders.enabled": true,
                 "workbench.editorAssociations": {
